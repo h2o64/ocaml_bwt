@@ -60,12 +60,11 @@ let display_matrix m =
 (* Get sorted matrix *)
 let sorted_matrix s =
 	let m = circulate_matrix s in
-	let tri a b = if a <= b then 0 else 1 in
-	List.fast_sort tri m;;
+	List.fast_sort compare m;;
 
 (* Get BWT Code *)
 let getBWT s =
-	let matrix = sorted_matrix (String.concat "" [s;"|"]) in
+	let matrix = sorted_matrix (String.concat "" [s;(String.make 1 (char_of_int 255))]) in
 	(* Get last element of a list *)
 	let rec last_list l = match l with
 		| [] -> failwith "Error empty list"
@@ -79,8 +78,7 @@ let getBWT s =
 (* Get the first column *)
 let first_column key =
 	let key_l = list_of_string key in
-	let tri a b = if a <= b then 0 else 1 in
-	List.fast_sort tri key_l;;
+	List.fast_sort compare key_l;;
 
 (* Get second column *)
 let getSecondColumn last first =

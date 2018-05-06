@@ -204,6 +204,45 @@ let reverseBWT s =
 	let a::b = (reverseBWT_aux [] c1 last) in
 	string_of_list (answer b);;
 
+(* Optimised reversing process *)
+let reverseBWT_opt s =
+	let key = Array.of_list (list_of_string s) in
+	let sorted_key = Array.of_list (first_column s) in
+	let n = String.length s in
+	(* Find first letter *)
+	let cur = ref 0 in
+	while not (key.(!cur) = '\255') do
+		cur := !cur + 1;
+	done;
+	(* Append the first letter *)
+	let ret = ref [sorted_key.(!cur)] in
+	for k = 0 to (n-2) do
+		let goal_letter = sorted_key.(!cur) in
+		(* Get the occurence number of it in key *)
+		let occ = ref 0 in
+		for i = 0 to !cur do
+			if sorted_key.(i) = goal_letter then occ := !occ + 1;
+		done;
+		(* Search for this letter in the sorted list *)
+		let j = ref 0 in
+		let found = ref 0 in
+		while (not (!found = !occ)) do
+			if (key.(!j) = goal_letter) then found := !found + 1;
+			j := !j + 1;
+		done;
+		(* Append the found letter *)
+		ret := sorted_key.((!j-1))::!ret;
+		(* Set cur to j *)
+		cur := (!j-1);
+	done;
+	(* Reverse a list *)
+	let rev_list (h::t) =
+		let rec rev_acc acc = function
+			| [] -> acc
+			| hd::tl -> rev_acc (hd::acc) tl in
+	rev_acc [] t in
+	string_of_list (rev_list !ret);;
+
 (* Benchmark *)
 let time f x =
 	let start = Unix.gettimeofday ()

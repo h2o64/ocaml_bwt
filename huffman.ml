@@ -38,6 +38,9 @@ let dump forest_r = match !forest_r with
 		forest_r := t;
 		(a,b);;
 
+(* Concat strings *)
+let concat s1 s2 = (String.concat "" [s1;s2]);;
+
 (* Huffman encodage *)
 let get_huffman_tree s =
 	(* Make all the nodes *)
@@ -70,51 +73,41 @@ let get_huffman_tree s =
 				insert_forest forest t;
 	done;(List.hd !forest);;
 
-(* Get characters code in huffman tree *)
-let getHuffmanCode t =
-	let l = ref [] in
-	let rec getHuffmanCode_aux tree cur =	match tree with
+(* Read an encoded word *)
+let read_huffman tree coded =
+	let rec read_huffman_aux t w =
+		let n = String.length w in
+			match t with
+				| EmptyTree -> ()
+				| Node(_,(_,g),(_,d)) ->
+					if n = 0 then
+						(if w.[0] = '0' then read_huffman_aux g ""
+						else read_huffman_aux d "")
+					else
+						(let shorten = (String.sub w 1 (n-1)) in
+						if w.[0] = '0' then read_huffman_aux g shorten
+						else read_huffman_aux d shorten);
+				| Leave(a,_) ->
+					print_char a;
+					(* Reboot from root *)
+					if not (n = 0) then read_huffman_aux tree w;
+			in
+	read_huffman_aux tree coded;;
+
+(* Get word from huffman tree *)
+let get_huffman tree word =
+	let letters = Array.make 255 "" in
+	(* Find code for all letters *)
+	let rec get_huffman_aux t cur = match t with
 		| EmptyTree -> ()
-		| Node(_,(num_g,g),(num_d,d)) ->
-			getHuffmanCode_aux g (String.concat "" [cur;string_of_int num_g]);
-			getHuffmanCode_aux d (String.concat "" [cur;string_of_int num_d]);
-		| Leave(a,_) -> (l := (a,cur)::!l) in
-	getHuffmanCode_aux t "";!l;;
-
-(* Find code for a letter *)
-let rec getCharacCode l c = match l with
-	| [] -> failwith "Character not found!";
-	| (a,code)::t -> if a = c then code else getCharacCode t c;;
-
-(* Find caract for the code *)
-let rec getCodeCharact l c = match l with
-	| [] -> '\255'
-	| (a,code)::t -> if code = c then a else getCodeCharact t c;;
-
-(* Concat strings *)
-let concat s1 s2 = (String.concat "" [s1;s2]);;
-
-(* Code my string *)
-let encode_huffman s =
-	let t = get_huffman_tree s in
-	let table = getHuffmanCode t in
+		| Node(_,(_,g),(_,d)) ->
+			get_huffman_aux g (concat cur "0");
+			get_huffman_aux d (concat cur "1");
+		| Leave(a,_) -> letters.(int_of_char a)<-cur in
+	get_huffman_aux tree "";
+	(* Make the actual word *)
+	let n = String.length word in
 	let ret = ref "" in
-	for i = 0 to ((String.length s)-1) do
-		ret := concat !ret (getCharacCode table s.[i]);
-	done;(!ret,t);;
-
-(* Decode Huffman code *)
-let decode_huffman (code,t) =
-	let table = getHuffmanCode t in
-	let cur = ref "" in
-	let ret = ref "" in
-	for i = 0 to ((String.length code)-1) do
-		(* Get current code *)
-		cur := concat !cur (String.make 1 code.[i]);
-		(* Search if it has a code *)
-		let cur_car = getCodeCharact table !cur in
-		(* Check if code exists *)
-		if not (cur_car = '\255') then
-			(cur := "";
-			ret := concat !ret (String.make 1 cur_car));
+	for i = 0 to (n-1) do
+		ret := concat !ret letters.(int_of_char word.[i]);
 	done;!ret;;
